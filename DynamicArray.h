@@ -3,27 +3,25 @@
  * Name: Mike Baldwin
  * Course: EECS 2510 Non-Linear Data Structures - Fall 2019
  * Date: 12/14/2019
- * Description: MY Dynamic Array class. Similar to std::vector, but built from scratch.
-*/
-
-#pragma once
-
-/*
- * This is MY implementation of a dynamicArray.
- * It is a 100% NON-STL class capable of resizing an array when it starts to fill, similar to the std::vector.
- * I would LOVE to be able to just use std::copy and std::move to avoid loops, but alas, they are STL themselves.
- * And I can't use memcpy and memmove because my structures contain strings, they would need strcpy called on them to be copied fully.
- * I use generics with T, because I wrote this back for Huffman and ended up not even using it, and I had a little more time then with all the huffman extensions.
+ * Description:
+ *		This is MY implementation of a dynamicArray.
+ *		It is a 100% NON-STL class capable of resizing an array when it starts to fill, similar to the std::vector.
+ *		I would LOVE to be able to just use std::copy and std::move to avoid loops, but alas, they are STL themselves.
+ *		And I can't use memcpy and memmove because my structures contain strings and custom objects, they would need strcpy & memcpy called on them, individually, to be copied fully.
+ *		I made this templated because I use a number of different types with it, in this project.
  *
- * I had to put the definitions in the header file (with the declarations) because of how c++ handles templates.
- * I *could* put them in a cpp file, but the only way (that I know of) requires a hacky solution of adding this to EVERY cpp file that this class is used in:
+ *		I had to put the definitions in the header file (with the declarations) because of how c++ handles templates.
+ *		I *could* put them in a cpp file, but the only way (that I know of) requires a hacky solution of adding this to EVERY cpp file that this class is used in:
  *
  *			<code>
  *				template DynamicArray<*MyType*>();
  *			</code>
  *
- * Maybe there is a better way...
+ *		Maybe there is a better way...
 */
+
+#pragma once
+
 template <typename T>
 class DynamicArray
 {
@@ -74,7 +72,7 @@ DynamicArray<T>::DynamicArray(const DynamicArray<T>& other) : size(other.size), 
 	*/
 
 	for(int i = 0; i < other.size; i++)
-		ptr[i] = other.ptr[i];
+		ptr[i] = other.ptr[i]; // Just letting the distinct objects copy constructor do the work for me
 
 	//std::copy(other.ptr, other.ptr + other.size, ptr); // ONLY HAVE THIS IN FOR TESTING
 }
@@ -83,7 +81,9 @@ template <class T>
 DynamicArray<T>::DynamicArray(DynamicArray<T>&& other) : DynamicArray<T>()
 {
 	/*
-	* Move constructor: Parameters set using initilization list
+	* Move constructor
+	* I let the compiler build a default constructed object, then swap it out
+	* Destruction takes place directly after.
 	*/
 
 	Swap(*this, other);

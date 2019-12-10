@@ -3,7 +3,14 @@
  * Name: Mike Baldwin
  * Course: EECS 2510 Non-Linear Data Structures - Fall 2019
  * Date: 12/14/2019
- * Description: MY Minimum Binary Heap class.
+ * Description:
+ *		This is MY implementation of a MIN binary heap.
+ *		Although the Cormen text describes a MAX-heap in psuedo-code, I was having trouble following how it resorts on removal.
+ *		So I made this one from the description of it instead......and had lots of fun debugging it....
+ *		Similar to the DynamicArray this class is templated as well, although technically I think I only use the Edge struct with this, so it doesn't have to be.
+ *		Unlike the DynamicArray, this clas doesn't require a copy constructor, move constructor, or assignment operator overload; as it is not handling dynamic memory.
+ *
+ *		NOTE: Please see the description of the DynamicArray as to why I have the definitions in the header file. Thank you.
 */
 
 #pragma once
@@ -11,17 +18,6 @@
 #include <iostream>
 #include "DynamicArray.h"
 
-/*
- * This is MY c# implementation of a binary heap.
- * Although the Cormen text describes a min-heap...nicely. I wasn't that impressed with the psuedo-code.
- * I understand the psuedo-code is meant to be language-agnostic, but it seems very non-oop and extreamly c-style.
- * SO I made this one from the description of the min-heap instead. .....and had lots of fun debugging it....
- *
- * Similar to the DynamicArray, I was about 3 monster energy drinks in at 2am so this class is templated as well.
- *
- * Unlike the DynamicArray, this clas doesn't require a copy constructor, move constructor, or assignment operator overload.
- * As it is not handling dynamic memory.
-*/
 template <typename T>
 class BinaryHeap
 {
@@ -33,13 +29,9 @@ public:
 	unsigned int Size();
 	bool Contains(T item);
 	T& operator[] (int index);
-	void MaxHeapify(int index);
 
 private:
 	DynamicArray<T> data;
-	int GetParentIndexOf(int index);
-	int GetLeftIndexOf(int index);
-	int GetRightIndexOf(int index);
 };
 
 //=================================================\\
@@ -61,10 +53,15 @@ template <class T>
 void BinaryHeap<T>::Push(T item)
 {
 	/*
-	 * Pushes an item ont the heap.
+	 * Pushes an item onto the heap.
 	 * This method places the item at the back (or bottom) of the heap
 	 * and slowly moves it towards the front (or top) depending upon its equality.
-	 * Very similar to MaxHeapify() but my own version.
+	 * Very similar to MaxHeapify() (or I guess MinHeapify()) but my own version, also non-recursive.
+	 * The way I have it working is that it doesn't care if it's less than its sibling.
+	 * It only cares if it's less than its parent or not.
+	 * This may not be the *exact* way Max(Min)Heapify() works, but it keeps items sorted correctly,
+	 * in the sense that the first item is ALWAYS the lowest value, and when you add or remove an item
+	 * the heap will resort itself to maintain that lowest value on the bottom.
 	*/
 
 	// Add the item to the underlying list, set the index variables to the new item and it's parent (if there is one)
@@ -97,19 +94,20 @@ T BinaryHeap<T>::Pop()
 	}
 
 	T result = data[1]; // Save the first node, which is the lowest cost
-	data.SwapItems(1, data.Size() - 1); // Then we swap the front and back items, it allows an easy removal without an array shift (at least in my old c++ implementation)
-	data.RemoveAt(data.Size() - 1); // Remove the last node (the saved one) as to not mess up the next bit here
+	data.SwapItems(1, data.Size() - 1); // Then we swap the front and back items. NOTE: it allows an easy removal without an array shift
+	data.RemoveAt(data.Size() - 1); // Remove the last node (the saved one)
 
-	int nodeIndex = 1;
-	int firstChildIndex = nodeIndex * 2;
-	int secondChildIndex = nodeIndex * 2 + 1;
+	int nodeIndex = 1; // Set the index (parent index) to the first value (my heap starts at 1)
+	int firstChildIndex = nodeIndex * 2; // Get the first child index (this may or may not exist)
+	int secondChildIndex = nodeIndex * 2 + 1; // Get the second child index (this may or may not exist)
 
+	// If we ever *fall* off the back of the heap (with either children), we've gone too far
 	while (firstChildIndex < data.Size())
 	{
-		if (secondChildIndex < data.Size()) //Both children exist
+		if (secondChildIndex < data.Size())
 		{
 			// Find which child has a lower value, Swap items (if needed) and set new index values
-			if (data[nodeIndex] > data[firstChildIndex] || data[nodeIndex] > data[secondChildIndex])
+			if (data[firstChildIndex] < data[nodeIndex] || data[secondChildIndex] < data[nodeIndex])
 			{
 				int lowestChildIndex = secondChildIndex;
 				if (data[firstChildIndex] < data[secondChildIndex])
@@ -120,12 +118,12 @@ T BinaryHeap<T>::Pop()
 				secondChildIndex = nodeIndex * 2 + 1;
 			}
 			else
-				break;
+				break; // We are as far as we can go
 		}
-		else //Only the first child exists
+		else // Only the first child exists
 		{
 			// Check if the first child has a lower value, if so, swap items and set new index values
-			if (data[nodeIndex] > data[firstChildIndex])
+			if (data[firstChildIndex] < data[nodeIndex])
 			{
 				data.SwapItems(nodeIndex, firstChildIndex);
 				nodeIndex = firstChildIndex;
@@ -133,11 +131,11 @@ T BinaryHeap<T>::Pop()
 				secondChildIndex = nodeIndex * 2 + 1;
 			}
 			else
-				break;
+				break; // We are as far as we can go
 		}
 	}
 
-	return result;
+	return result; // Return the previously saved item
 }
 
 template <class T>
@@ -145,6 +143,7 @@ T BinaryHeap<T>::Peek()
 {
 	/*
 	 * Get the top (lowest) value, but don't remove it from the heap.
+	 * Because the heap starts at 1, grab the element at 1.
 	*/
 
 	return data[1];
@@ -180,61 +179,4 @@ T& BinaryHeap<T>::operator[] (int index)
 	*/
 
 	return data[index + 1];
-}
-
-/*
-* I included the below functions to appease the grader in-case they didn't like my version.
-* Although the below functions work, I don't use them for this project.
-*/
-
-template <class T>
-int BinaryHeap<T>::GetParentIndexOf(int index)
-{
-	/*
-	 * Returns the parent item of the item at the supplied index
-	*/
-
-	return data[index / 2];
-}
-
-template <class T>
-int BinaryHeap<T>::GetLeftIndexOf(int index)
-{
-	/*
-	 * Returns the left child item of the item at the supplied index
-	*/
-
-	return data[2 * index];
-}
-
-template <class T>
-int BinaryHeap<T>::GetRightIndexOf(int index)
-{
-	/*
-	 * Returns the right child item of the item at the supplied index
-	*/
-
-	return data[2 * index + 1];
-}
-
-template <class T>
-void BinaryHeap<T>::MaxHeapify(int index)
-{
-	/*
-	 * Recursively sorts an item down through the heap
-	*/
-
-	int left = GetLeftIndexOf(index);
-	int right = GetRightIndexOf(index);
-	int largest = 0;
-
-	if(left <= data.Size() && data[left] > data[index])
-		largest = left;
-	else
-		largest = index;
-	if(right <= data.Size() && data[right] > data[largest])
-		largest = right;
-	if(largest != index)
-		data.SwapItems(index, largest);
-	MaxHeapify(largest);
 }
